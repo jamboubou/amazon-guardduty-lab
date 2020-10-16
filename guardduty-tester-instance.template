@@ -62,7 +62,7 @@
         "BasicLinuxTargetIP": {
             "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})",
             "ConstraintDescription": "CIDR block parameter must be in the form x.x.x.x/16-28",
-            "Default": "172.16.0.0",
+            "Default": "10.0.2.38",
             "Description": "IP address of Linux instance to target",
             "Type": "String"
         },
@@ -141,23 +141,18 @@
                     "Path": "/"
                 }
         },
-	    "RedTeamNetInt" : {
-                "Type" : "AWS::EC2::NetworkInterface",
-                "Properties" : {
-                    "SubnetId": { "Ref" : "PrivateSubnet" },
-                    "GroupSet": [{"Ref": "RedTeamSecurityGroup" }]
-                }
-            },
             "RedTeam" : {
                 "Type" : "AWS::EC2::Instance",
                 "Properties" : {
                     "KeyName" : {
 			"Ref" : "KeyPairName"
 		    },
-		    "NetworkInterfaces": [{
-	  	        "NetworkInterfaceId" : {"Ref" : "RedTeamNetInt"},
-                        "DeviceIndex" : "0"
-                    }],
+            "NetworkInterfaces": [ {
+                "AssociatePublicIpAddress": "true",
+                "DeviceIndex": "0",
+                "GroupSet": { "Ref" : "RedTeamSecurityGroup" },
+                "SubnetId": { "Ref" : "PrivateSubnet" }
+            } ],
                     "IamInstanceProfile" : {"Ref" : "RedTeamInstanceProfile"},
                     "UserData" : {
                          "Fn::Base64" : {
@@ -184,6 +179,9 @@
 						"echo 'BASIC_LINUX_TARGET=\"",
 						{ "Ref" : "BasicLinuxTargetIP"},
 						"\"' >> /home/ec2-user/localIps.sh\n",
+						"echo 'BASIC_WINDOWS_TARGET=\"",
+						{ "Ref" : "BasicLinuxTargetIP"},
+						"\"' >> /home/ec2-user/localIps.sh\n",
                                                 "echo -n 'RED_TEAM_INSTANCE=\"' >> /home/ec2-user/localIps.sh\n",
 						"wget -q -O - http://169.254.169.254/latest/meta-data/instance-id >> /home/ec2-user/localIps.sh\n",
 						"echo '\"' >> /home/ec2-user/localIps.sh\n",
@@ -193,6 +191,8 @@
 						"echo 'BASIC_LINUX_INSTANCE=\"",
 						{ "Ref" : "BasicLinuxTargetIP"},
 						"\"' >> /home/ec2-user/localIps.sh\n",
+						"echo 'BASIC_WINDOWS_INSTANCE=\"",
+						{ "Ref" : "BasicLinuxTargetIP"},
                         "\"' >> /home/ec2-user/localIps.sh\n",
                                                 "pip install cmake\n",
                                                 "mkdir /home/ec2-user/FreeRDP\n",
@@ -230,9 +230,6 @@
                           }
                       },
                     "InstanceType" : "m5.large",
-                    "SubnetId": {
-                        "Ref": "PrivateSubnet"
-                    },
                     "ImageId": 
                     {
                         "Ref": "LatestLinuxAMI"
